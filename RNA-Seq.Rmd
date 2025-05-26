@@ -1,0 +1,185 @@
+---
+title: "RNA-Seq_SRA"
+output: html_document
+date: "2025-05-26"
+---
+
+
+```{r}
+
+library(DESeq2)
+
+library(apeglm)
+
+library(dplyr)
+
+library(tidyverse)
+
+library(ggplot2)
+
+library(ggrepel)
+
+```
+
+
+```{r}
+
+setwd("~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/")
+
+df_kras <- read.delim("~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/Sample Set/GSE295712_gene-featureCount-else-int_name.txt")
+
+
+head(df_kras[, 1:5])
+
+counts_agg <- aggregate(. ~ GeneName, data = df_kras, FUN = sum)
+
+rownames(counts_agg) <- counts_agg$GeneName
+
+counts <- counts_agg[, -1]
+
+condition <- factor(c("Lung", "Lung", "Lymph", "Lymph", "Lymph"))
+
+coldata <- data.frame(condition = condition)
+
+rownames(coldata) <- colnames(counts)
+
+dds <- DESeqDataSetFromMatrix(countData = counts, colData = coldata, design = ~ condition)
+
+dds <- DESeq(dds)
+
+normalized_counts <- counts(dds, normalized=TRUE)
+
+res_kras <- results(dds, contrast = c("condition","Lymph","Lung"))
+
+res_kras
+
+res_kras <- na.omit(res_kras)
+
+res_kras
+
+res_kras$gene <- rownames(res_kras)
+
+res_kras <- res_kras[, c("gene", setdiff(names(res_kras), "gene"))]
+
+res_kras
+
+res_kras_df <- as.data.frame(res_kras)
+
+write.csv(res_kras_df, file = "~/Documents/GitHub/kras_df.csv")
+
+```
+
+
+```{r}
+res_kras_df <- res_kras_df %>% 
+  mutate(rnk = sign(log2FoldChange) * (-log10(pvalue)))
+
+subset_res_kras <- res_kras_df %>%
+  select(rnk)
+
+subset_res_kras <- arrange(subset_res_kras, -rnk)
+
+write.csv(subset_res_kras, file = "~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/files for GSEA/rnk.csv")
+
+```
+
+
+
+```{r}
+neg_kras <- read_tsv("~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/files for GSEA/kras.GseaPreranked.1748227258719/gsea_report_for_na_neg_1748227258719.tsv")
+
+head(neg_kras)
+
+neg_df <- neg_kras[, c("NAME", "FDR q-val")] %>%
+  mutate(log10fdr = log10(`FDR q-val`+1e-10))
+
+
+pos_kras <- read_tsv("~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/files for GSEA/kras.GseaPreranked.1748227258719/gsea_report_for_na_pos_1748227258719.tsv")
+
+head(pos_kras)
+
+pos_df <- pos_kras[, c("NAME", "FDR q-val")] %>%
+  mutate(log10fdr = -log10(`FDR q-val`+1e-10))
+
+
+merge_kras <- full_join(neg_df, pos_df)
+
+
+merge_kras <- filter(merge_kras, log10fdr > 1.3 | log10fdr < -1.3)
+
+merge_kras <- merge_kras %>%
+  mutate(cond = case_when(
+    log10fdr > -1.3 ~ "red",
+    log10fdr < 1.3 ~"blue"
+  ))
+
+
+```
+
+
+```{r}
+plot_kras <- ggplot(merge_kras, mapping = aes(x=log10fdr, y=reorder(NAME, -log10fdr))) + 
+  geom_bar(stat = "identity", color = "black", aes(fill=cond)) + 
+  scale_fill_identity() +
+  xlab("-log10(FDR q-value)") +
+  ylab("Hallmark Pathways") +
+  geom_vline(xintercept = 1.3, linetype = "dashed", color = "black") +
+  geom_vline(xintercept =  -1.3, linetype = "dashed", color = "black")
+
+plot_kras
+
+```
+
+
+```{r}
+res_kras_df$Pathways <- "NS"
+res_kras_df$Pathways[res_kras_df$log2FoldChange > 1.3 & res_kras_df$pvalue < 0.05] <- "Up"
+res_kras_df$Pathways[res_kras_df$log2FoldChange < -1.3 & res_kras_df$pvalue < 0.05] <- "Down"
+
+top50_kras <- head(res_kras_df[order(res_kras_df$pvalue), "gene"], 50)
+
+
+res_kras_df$de50kras <- ifelse(res_kras_df$gene %in% top50_kras, res_kras_df$gene, NA)
+
+
+volcano_kras <- ggplot(res_kras_df, aes(x=log2FoldChange, y=-log10(pvalue), col = Pathways, label = de50kras)) +
+  geom_point() +
+  geom_vline(xintercept = 1.3, linetype = "dashed", color = "black") +
+  geom_vline(xintercept = -1.3, linetype = "dashed", color = "black") +
+  geom_hline(yintercept = 1.3, linetype = "dashed", color = "blue") +
+  geom_hline(yintercept = -1.3, linetype = "dashed", color = "blue") +
+  scale_color_manual(values = c("red", "grey", "blue"),
+                     labels = c("Downregulated", "Not Significant", "Upregulated")) +
+  geom_text_repel(max.overlaps = Inf) 
+
+volcano_kras
+```
+
+
+
+```{r}
+
+ang <- read.csv("~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/Sample set/Angiogenesis.csv")
+
+
+ang$Pathways <- "NS"
+ang$Pathways[ang$log2FoldChange > 1.3 & ang$pvalue < 0.05] <- "Up"
+ang$Pathways[ang$log2FoldChange < -1.3 & ang$pvalue < 0.05] <- "Down"
+
+top10_ang <- head(ang[order(ang$pvalue), "gene"], 10)
+
+ang$de10ang <- ifelse(ang$gene %in% top10_ang, ang$gene, NA)
+
+
+volcano_ang <- ggplot(ang, aes(x=log2FoldChange, y=-log10(pvalue), col = Pathways, label = de10ang)) +
+  geom_point() +
+  geom_vline(xintercept = 1.3, linetype = "dashed", color = "black") +
+  geom_vline(xintercept = -1.3, linetype = "dashed", color = "black") +
+  geom_hline(yintercept = 1.0, linetype = "dashed", color = "blue") +
+  geom_hline(yintercept = -1.0, linetype = "dashed", color = "blue") +
+  scale_color_manual(values = c("red", "grey", "blue"),
+                     labels = c("Downregulated", "Not Significant", "Upregulated")) +
+  geom_text_repel(max.overlaps = Inf) 
+
+volcano_ang
+```
