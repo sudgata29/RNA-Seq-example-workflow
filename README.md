@@ -56,18 +56,27 @@ All analyses were conducted in **R (v 4.5)** using the following packages:
 ## 📁 Project Structure
 
 
-GSE295712_RNAseq_Analysis/
-│
+GSE295712_RNAseq_Analysis
+
 ├── data/ # Raw and processed input files
+
 │ └── GSE295712_featureCounts.txt
+
 ├── results/ # Output tables
+
 │ ├── kras_df.tsv
+
 │
 ├── scripts / RNA-Seq.Rmd
+
 │ ├── 01_preprocess
+
 │ ├── 02_deseq2_analysis
+
 │ ├── 03_gsea
+
 │ └── 04_visualizations
+
 │
 └── README.md
 
@@ -86,7 +95,7 @@ GSE295712_RNAseq_Analysis/
 **Shirsa Udgata**  
 Cancer Biologist  
 📍 Madison, WI  
-🔗 [LinkedIn / GitHub / Website (optional)]
+www.linkedin.com/in/shirsa-udgata 
 
 ---
 
