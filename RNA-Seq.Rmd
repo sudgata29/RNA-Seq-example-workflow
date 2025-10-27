@@ -32,7 +32,7 @@ rownames(counts_agg) <- counts_agg$GeneName
 counts <- counts_agg[, -1]
 
 
-##Specify the contrast groups
+## Specify the contrast groups
 
 condition <- factor(c("Lung", "Lung", "Lymph", "Lymph", "Lymph"))
 
@@ -41,26 +41,26 @@ coldata <- data.frame(condition = condition)
 rownames(coldata) <- colnames(counts)
 
 
-##Run DESEq2
+## Run DESEq2
 
 dds <- DESeqDataSetFromMatrix(countData = counts, colData = coldata, design = ~ condition)
 
 dds <- DESeq(dds)
 
 
-##Normalized the counts data
+## Normalized the counts data
 
 normalized_counts <- counts(dds, normalized=TRUE)
 
 
-##Specify the levels of contrast
+## Specify the levels of contrast
 
 res_kras <- results(dds, contrast = c("condition","Lymph","Lung"))
 
 res_kras
 
 
-##Remove all NA fields
+## Remove all NA fields
 
 res_kras <- na.omit(res_kras)
 
@@ -77,7 +77,7 @@ res_kras_df <- as.data.frame(res_kras)
 write.csv(res_kras_df, file = "~/Documents/GitHub/kras_df.csv")
 
 
-##Running Pre-ranked GSEA
+## Running Pre-ranked GSEA
 
 res_kras_df <- res_kras_df %>% 
   mutate(rnk = sign(log2FoldChange) * (-log10(pvalue)))
@@ -90,7 +90,7 @@ subset_res_kras <- arrange(subset_res_kras, -rnk)
 write.csv(subset_res_kras, file = "~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/files for GSEA/rnk.csv") #Save the file as .rnk after removing the header from the first row. I ran the GSEA from the desktop app.
 
 
-##Visualizing the up and downregulated pathways from GSEA output
+## Visualizing the up and downregulated pathways from GSEA output
 
 neg_kras <- read_tsv("~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/files for GSEA/kras.GseaPreranked.1748227258719/gsea_report_for_na_neg_1748227258719.tsv")
 
@@ -119,7 +119,7 @@ merge_kras <- merge_kras %>%
     log10fdr < 1.3 ~"blue"
   ))
 
-##Visualizing the pathways plot - the plot is shown in Figures folder
+## Visualizing the pathways plot - the plot is shown in Figures folder
 
 plot_kras <- ggplot(merge_kras, mapping = aes(x=log10fdr, y=reorder(NAME, -log10fdr))) + 
   geom_bar(stat = "identity", color = "black", aes(fill=cond)) + 
@@ -131,7 +131,7 @@ plot_kras <- ggplot(merge_kras, mapping = aes(x=log10fdr, y=reorder(NAME, -log10
 
 plot_kras
 
-##Visualizing gene level analysis from GSEA output. The plot is shown in the Figures folder
+## Visualizing gene level analysis from GSEA output. The plot is shown in the Figures folder
 
 res_kras_df$Pathways <- "NS"
 res_kras_df$Pathways[res_kras_df$log2FoldChange > 1.3 & res_kras_df$pvalue < 0.05] <- "Up" #Based on the approrpiate cutoffs
@@ -155,7 +155,7 @@ volcano_kras <- ggplot(res_kras_df, aes(x=log2FoldChange, y=-log10(pvalue), col 
 
 volcano_kras
 
-##Pathway specific volcano plots -- here I have shown the example of Angiogenesis pathway since the authors found VEGFA being upregulated in the lymph nodes compared to lung samples. The plot is shown in the Figures folder.
+## Pathway specific volcano plots -- here I have shown the example of Angiogenesis pathway since the authors found VEGFA being upregulated in the lymph nodes compared to lung samples. The plot is shown in the Figures folder.
 
 
 ang <- read.csv("~/Documents/GitHub/KRAS-RNA Seq/RNA-Seq-mini-project-KRAS/Sample set/Angiogenesis.csv")
