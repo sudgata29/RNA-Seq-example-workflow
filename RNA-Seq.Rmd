@@ -31,6 +31,7 @@ rownames(counts_agg) <- counts_agg$GeneName
 
 counts <- counts_agg[, -1]
 
+
 ##Specify the contrast groups
 
 condition <- factor(c("Lung", "Lung", "Lymph", "Lymph", "Lymph"))
@@ -39,21 +40,25 @@ coldata <- data.frame(condition = condition)
 
 rownames(coldata) <- colnames(counts)
 
+
 ##Run DESEq2
 
 dds <- DESeqDataSetFromMatrix(countData = counts, colData = coldata, design = ~ condition)
 
 dds <- DESeq(dds)
 
+
 ##Normalized the counts data
 
 normalized_counts <- counts(dds, normalized=TRUE)
+
 
 ##Specify the levels of contrast
 
 res_kras <- results(dds, contrast = c("condition","Lymph","Lung"))
 
 res_kras
+
 
 ##Remove all NA fields
 
